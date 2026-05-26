@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BandRole {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  bands        BandMember[]
+  songs        Song[]
+  votes        Vote[]
+}
+
+model Band {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  members   BandMember[]
+  gigs      Gig[]
+}
+
+model BandMember {
+  id       String   @id @default(cuid())
+  userId   String
+  bandId   String
+  role     BandRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  band     Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bandId])
+}
+
+model Gig {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime
+  venue     String?
+  bandId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  band      Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  songs     Song[]
+}
+
+model Song {
+  id           String   @id @default(cuid())
+  title        String
+  artist       String
+  bpm          Int?
+  key          String?
+  votes        Int      @default(0)
+  setlistOrder Int?
+  gigId        String
+  addedById    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  gig          Gig      @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  addedBy      User     @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  voteRecords  Vote[]
+}
+
+model Vote {
+  id     String @id @default(cuid())
+  value  Int
+  userId String
+  songId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, songId])
+}
