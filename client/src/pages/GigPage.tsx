@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { api } from "../lib/api";
-import type { Gig, Song } from "../shared/types";
+import { useGigSocket } from "../hooks/useGigSocket";
+import type { Song } from "../shared/types";
 import {
   ArrowLeft, Plus, Loader2, Music, ThumbsUp, ThumbsDown,
   GripVertical, Trash2, Calendar, MapPin, ListMusic, Hash,
+  Wifi, WifiOff, Users,
 } from "lucide-react";
 
 function SongCard({
@@ -108,17 +109,23 @@ export function GigPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [gig, setGig] = useState<Gig | null>(null);
-  const [songs, setSongs] = useState<Song[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    gig,
+    songs,
+    onlineUsers,
+    connected,
+    loading,
+    error,
+    addSong,
+    removeSong,
+    voteSong,
+  } = useGigSocket(gigId);
 
   const [showAddSong, setShowAddSong] = useState(false);
   const [songTitle, setSongTitle] = useState("");
   const [songArtist, setSongArtist] = useState("");
   const [songBpm, setSongBpm] = useState("");
   const [songKey, setSongKey] = useState("");
-  const [addingSong, setAddingSong] = useState(false);
 
   const poolSongs = songs
     .filter((s) => s.setlistOrder === null)
@@ -128,69 +135,36 @@ export function GigPage() {
     .filter((s) => s.setlistOrder !== null)
     .sort((a, b) => (a.setlistOrder ?? 0) - (b.setlistOrder ?? 0));
 
-  const fetchGig = useCallback(async () => {
-    if (!gigId) return;
-    try {
-      const data = await api.get<Gig>(`/gigs/${gigId}`);
-      setGig(data);
-      setSongs(data.songs || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load gig");
-    } finally {
-      setLoading(false);
-    }
-  }, [gigId]);
-
-  useEffect(() => {
-    fetchGig();
-  }, [fetchGig]);
-
-  const handleAddSong = async (e: React.FormEvent) => {
+  const handleAddSong = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!songTitle.trim() || !songArtist.trim() || !gigId) return;
-    setAddingSong(true);
-    try {
-      const song = await api.post<Song>(`/gigs/${gigId}/songs`, {
-        title: songTitle.trim(),
-        artist: songArtist.trim(),
-        bpm: songBpm ? parseInt(songBpm) : undefined,
-        key: songKey.trim() || undefined,
-      });
-      setSongs((prev) => [...prev, song]);
-      setSongTitle("");
-      setSongArtist("");
-      setSongBpm("");
-      setSongKey("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add song");
-    } finally {
-      setAddingSong(false);
-    }
+    if (!songTitle.trim() || !songArtist.trim()) return;
+    addSong({
+      title: songTitle.trim(),
+      artist: songArtist.trim(),
+      bpm: songBpm ? parseInt(songBpm) : undefined,
+      key: songKey.trim() || undefined,
+    });
+    setSongTitle("");
+    setSongArtist("");
+    setSongBpm("");
+    setSongKey("");
   };
 
-  const handleVote = async (songId: string, value: number) => {
-    if (!gigId) return;
-    try {
-      const updated = await api.post<Song>(`/songs/${songId}/vote`, { value });
-      setSongs((prev) => prev.map((s) => (s.id === songId ? updated : s)));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to vote");
-    }
+  const handleVote = (songId: string, value: number) => {
+    voteSong(songId, value);
   };
 
-  const handleRemove = async (songId: string) => {
-    try {
-      await api.delete(`/songs/${songId}`);
-      setSongs((prev) => prev.filter((s) => s.id !== songId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove song");
-    }
+  const handleRemove = (songId: string) => {
+    removeSong(songId);
   };
 
   if (loading) {
     return (
       <div className="page-container flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 spinner" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 spinner mx-auto mb-3" />
+          <p className="text-sm text-zinc-500">Connecting to session...</p>
+        </div>
       </div>
     );
   }
@@ -230,12 +204,47 @@ export function GigPage() {
               )}
             </div>
           </div>
+
+          {/* Connection status and online users */}
+          <div className="flex items-center gap-3 shrink-0">
+            {onlineUsers.length > 0 && (
+              <div className="hidden sm:flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5">
+                <Users className="w-3.5 h-3.5 text-brand-400" />
+                <div className="flex -space-x-1.5">
+                  {onlineUsers.slice(0, 5).map((u) => (
+                    <div
+                      key={u.userId}
+                      title={u.username}
+                      className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-600/50 to-brand-800/50 flex items-center justify-center text-[10px] font-medium text-brand-200 border border-zinc-900 ring-1 ring-brand-500/20"
+                    >
+                      {u.username[0].toUpperCase()}
+                    </div>
+                  ))}
+                  {onlineUsers.length > 5 && (
+                    <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-medium text-zinc-400 border border-zinc-900">
+                      +{onlineUsers.length - 5}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <div
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg ${
+                connected
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+              }`}
+            >
+              {connected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+              <span className="hidden sm:inline">{connected ? "Live" : "Offline"}</span>
+            </div>
+          </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm animate-pulse">
             {error}
           </div>
         )}
@@ -321,8 +330,8 @@ export function GigPage() {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <button id="add-song-submit" type="submit" disabled={addingSong} className="btn-primary">
-                    {addingSong ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <button id="add-song-submit" type="submit" className="btn-primary">
+                    <Plus className="w-4 h-4" />
                     Add to Pool
                   </button>
                 </div>
