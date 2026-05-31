@@ -1,108 +1,83 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  DragOverlay,
+  pointerWithin,
+  rectIntersection,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+  type CollisionDetection,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { useAuth } from "../context/AuthContext";
 import { useGigSocket } from "../hooks/useGigSocket";
-import type { Song } from "../shared/types";
+import { SongCard } from "../components/SongCard";
+import { SortableSongCard } from "../components/SortableSongCard";
+import { DraggablePoolSong } from "../components/DraggablePoolSong";
+
 import {
-  ArrowLeft, Plus, Loader2, Music, ThumbsUp, ThumbsDown,
-  GripVertical, Trash2, Calendar, MapPin, ListMusic, Hash,
-  Wifi, WifiOff, Users,
+  ArrowLeft, Plus, Loader2, Music, Calendar, MapPin,
+  ListMusic, Hash, Wifi, WifiOff, Users,
 } from "lucide-react";
 
-function SongCard({
-  song,
-  userId,
-  showDragHandle,
-  position,
-  onVote,
-  onRemove,
-}: {
-  song: Song;
-  userId: string;
-  showDragHandle?: boolean;
-  position?: number;
-  onVote: (songId: string, value: number) => void;
-  onRemove: (songId: string) => void;
-}) {
-  const userVote = song.voteRecords?.find((v) => v.userId === userId);
-  const canRemove = song.addedById === userId;
+const POOL_ID = "pool-droppable";
+const SETLIST_ID = "setlist-droppable";
+
+function DroppablePool({ children, isOver }: { children: React.ReactNode; isOver: boolean }) {
+  const { setNodeRef } = useDroppable({ id: POOL_ID });
 
   return (
-    <div className="group bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 flex items-center gap-3 hover:border-zinc-700 transition-all duration-200">
-      {showDragHandle && (
-        <div className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400">
-          <GripVertical className="w-4 h-4" />
-        </div>
-      )}
-
-      {position !== undefined && (
-        <span className="w-7 h-7 rounded-md bg-brand-600/20 text-brand-300 text-sm font-semibold flex items-center justify-center shrink-0">
-          {position}
-        </span>
-      )}
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold text-zinc-100 truncate">{song.title}</h4>
-        </div>
-        <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
-      </div>
-
-      <div className="flex items-center gap-1.5 shrink-0">
-        {song.bpm && <span className="badge-amber text-[11px]">{song.bpm} BPM</span>}
-        {song.key && <span className="badge-emerald text-[11px]">{song.key}</span>}
-      </div>
-
-      {!showDragHandle && (
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            id={`upvote-${song.id}`}
-            onClick={() => onVote(song.id, 1)}
-            className={`p-1.5 rounded-md transition-all duration-200 ${
-              userVote?.value === 1
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10"
-            }`}
-          >
-            <ThumbsUp className="w-3.5 h-3.5" />
-          </button>
-          <span
-            className={`text-sm font-semibold min-w-[1.5rem] text-center ${
-              song.votes > 0
-                ? "text-emerald-400"
-                : song.votes < 0
-                  ? "text-rose-400"
-                  : "text-zinc-500"
-            }`}
-          >
-            {song.votes}
-          </span>
-          <button
-            id={`downvote-${song.id}`}
-            onClick={() => onVote(song.id, -1)}
-            className={`p-1.5 rounded-md transition-all duration-200 ${
-              userVote?.value === -1
-                ? "bg-rose-500/20 text-rose-400"
-                : "text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10"
-            }`}
-          >
-            <ThumbsDown className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {canRemove && (
-        <button
-          id={`remove-song-${song.id}`}
-          onClick={() => onRemove(song.id)}
-          className="p-1.5 rounded-md text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      )}
+    <div
+      ref={setNodeRef}
+      className={`space-y-2 min-h-[100px] rounded-xl p-2 -m-2 transition-colors duration-200 ${
+        isOver ? "bg-brand-500/5 ring-1 ring-brand-500/20" : ""
+      }`}
+    >
+      {children}
     </div>
   );
 }
+
+function DroppableSetlist({ children, isOver, isEmpty }: { children: React.ReactNode; isOver: boolean; isEmpty: boolean }) {
+  const { setNodeRef } = useDroppable({ id: SETLIST_ID });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[100px] rounded-xl transition-all duration-200 ${
+        isEmpty && !isOver
+          ? "border-2 border-dashed border-zinc-800 py-16 text-center"
+          : isEmpty && isOver
+            ? "border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 py-16 text-center"
+            : isOver
+              ? "bg-emerald-500/5 ring-1 ring-emerald-500/20 p-2 -m-2 space-y-2"
+              : "space-y-2 p-2 -m-2"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Custom collision detection: use rectIntersection for containers, pointerWithin for items */
+const customCollision: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  return rectIntersection(args);
+};
 
 export function GigPage() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -119,6 +94,8 @@ export function GigPage() {
     addSong,
     removeSong,
     voteSong,
+    updateSetlist,
+    setSongs,
   } = useGigSocket(gigId);
 
   const [showAddSong, setShowAddSong] = useState(false);
@@ -127,13 +104,153 @@ export function GigPage() {
   const [songBpm, setSongBpm] = useState("");
   const [songKey, setSongKey] = useState("");
 
-  const poolSongs = songs
-    .filter((s) => s.setlistOrder === null)
-    .sort((a, b) => b.votes - a.votes);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [overContainerId, setOverContainerId] = useState<string | null>(null);
 
-  const setlistSongs = songs
-    .filter((s) => s.setlistOrder !== null)
-    .sort((a, b) => (a.setlistOrder ?? 0) - (b.setlistOrder ?? 0));
+  const poolSongs = useMemo(
+    () => songs.filter((s) => s.setlistOrder === null).sort((a, b) => b.votes - a.votes),
+    [songs]
+  );
+
+  const setlistSongs = useMemo(
+    () => songs.filter((s) => s.setlistOrder !== null).sort((a, b) => (a.setlistOrder ?? 0) - (b.setlistOrder ?? 0)),
+    [songs]
+  );
+
+  const setlistIds = useMemo(() => setlistSongs.map((s) => s.id), [setlistSongs]);
+
+  const activeSong = useMemo(
+    () => (activeDragId ? songs.find((s) => s.id === activeDragId) ?? null : null),
+    [activeDragId, songs]
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const findContainer = useCallback(
+    (id: string): "pool" | "setlist" | null => {
+      if (id === POOL_ID) return "pool";
+      if (id === SETLIST_ID) return "setlist";
+      if (poolSongs.some((s) => s.id === id)) return "pool";
+      if (setlistSongs.some((s) => s.id === id)) return "setlist";
+      return null;
+    },
+    [poolSongs, setlistSongs]
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  }, []);
+
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const overId = event.over?.id;
+      if (!overId) {
+        setOverContainerId(null);
+        return;
+      }
+      const container = findContainer(String(overId));
+      setOverContainerId(container === "pool" ? POOL_ID : container === "setlist" ? SETLIST_ID : null);
+    },
+    [findContainer]
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveDragId(null);
+      setOverContainerId(null);
+
+      const { active, over } = event;
+      if (!over) return;
+
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const sourceContainer = active.data.current?.container as string | undefined;
+      const targetContainer = findContainer(overId);
+
+      if (!sourceContainer || !targetContainer) return;
+
+      // Pool to Setlist: add song to end of setlist
+      if (sourceContainer === "pool" && targetContainer === "setlist") {
+        const newSetlistIds = [...setlistIds];
+
+        // Insert at the position of the overId if its a setlist item, or at end
+        const overIndex = newSetlistIds.indexOf(overId);
+        if (overIndex >= 0) {
+          newSetlistIds.splice(overIndex, 0, activeId);
+        } else {
+          newSetlistIds.push(activeId);
+        }
+
+        // Optimistic update
+        setSongs((prev) =>
+          prev.map((s) => {
+            if (s.id === activeId) {
+              return { ...s, setlistOrder: newSetlistIds.indexOf(activeId) + 1 };
+            }
+            const idx = newSetlistIds.indexOf(s.id);
+            if (idx >= 0) {
+              return { ...s, setlistOrder: idx + 1 };
+            }
+            return { ...s, setlistOrder: null };
+          })
+        );
+
+        updateSetlist(newSetlistIds);
+        return;
+      }
+
+      // Setlist to Pool: remove song from setlist
+      if (sourceContainer === "setlist" && targetContainer === "pool") {
+        const newSetlistIds = setlistIds.filter((id) => id !== activeId);
+
+        // Optimistic update
+        setSongs((prev) =>
+          prev.map((s) => {
+            if (s.id === activeId) {
+              return { ...s, setlistOrder: null };
+            }
+            const idx = newSetlistIds.indexOf(s.id);
+            if (idx >= 0) {
+              return { ...s, setlistOrder: idx + 1 };
+            }
+            return s;
+          })
+        );
+
+        updateSetlist(newSetlistIds);
+        return;
+      }
+
+      // Reorder within Setlist
+      if (sourceContainer === "setlist" && targetContainer === "setlist") {
+        if (activeId === overId) return;
+
+        const oldIndex = setlistIds.indexOf(activeId);
+        const newIndex = setlistIds.indexOf(overId);
+        if (oldIndex < 0 || newIndex < 0) return;
+
+        const newOrder = arrayMove(setlistIds, oldIndex, newIndex);
+
+        // Optimistic update
+        setSongs((prev) =>
+          prev.map((s) => {
+            const idx = newOrder.indexOf(s.id);
+            if (idx >= 0) {
+              return { ...s, setlistOrder: idx + 1 };
+            }
+            return s;
+          })
+        );
+
+        updateSetlist(newOrder);
+        return;
+      }
+    },
+    [findContainer, setlistIds, setSongs, updateSetlist]
+  );
 
   const handleAddSong = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +322,6 @@ export function GigPage() {
             </div>
           </div>
 
-          {/* Connection status and online users */}
           <div className="flex items-center gap-3 shrink-0">
             {onlineUsers.length > 0 && (
               <div className="hidden sm:flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5">
@@ -244,160 +360,185 @@ export function GigPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm animate-pulse">
+          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
             {error}
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Song Pool */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="section-title">
-                <Music className="w-5 h-5 text-brand-400" />
-                Song Pool
-                <span className="badge-zinc ml-1">{poolSongs.length}</span>
-              </h2>
-              <button
-                id="toggle-add-song"
-                onClick={() => setShowAddSong(!showAddSong)}
-                className="btn-primary text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Song
-              </button>
-            </div>
-
-            {showAddSong && (
-              <form onSubmit={handleAddSong} className="card mb-4 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="song-title" className="block text-sm font-medium text-zinc-400 mb-1.5">
-                      Title
-                    </label>
-                    <input
-                      id="song-title"
-                      type="text"
-                      value={songTitle}
-                      onChange={(e) => setSongTitle(e.target.value)}
-                      placeholder="Song title"
-                      className="w-full"
-                      autoFocus
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="song-artist" className="block text-sm font-medium text-zinc-400 mb-1.5">
-                      Artist
-                    </label>
-                    <input
-                      id="song-artist"
-                      type="text"
-                      value={songArtist}
-                      onChange={(e) => setSongArtist(e.target.value)}
-                      placeholder="Artist name"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="song-bpm" className="block text-sm font-medium text-zinc-400 mb-1.5">
-                      BPM (optional)
-                    </label>
-                    <input
-                      id="song-bpm"
-                      type="number"
-                      value={songBpm}
-                      onChange={(e) => setSongBpm(e.target.value)}
-                      placeholder="120"
-                      min="1"
-                      max="300"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="song-key" className="block text-sm font-medium text-zinc-400 mb-1.5">
-                      Key (optional)
-                    </label>
-                    <input
-                      id="song-key"
-                      type="text"
-                      value={songKey}
-                      onChange={(e) => setSongKey(e.target.value)}
-                      placeholder="Am"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <button id="add-song-submit" type="submit" className="btn-primary">
-                    <Plus className="w-4 h-4" />
-                    Add to Pool
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {poolSongs.length === 0 ? (
-              <div className="card text-center py-12">
-                <Music className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                <p className="text-zinc-500 text-sm">No songs in the pool yet</p>
-                <p className="text-zinc-600 text-xs mt-1">Add songs and vote on them</p>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={customCollision}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Song Pool */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="section-title">
+                  <Music className="w-5 h-5 text-brand-400" />
+                  Song Pool
+                  <span className="badge-zinc ml-1">{poolSongs.length}</span>
+                </h2>
+                <button
+                  id="toggle-add-song"
+                  onClick={() => setShowAddSong(!showAddSong)}
+                  className="btn-primary text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Song
+                </button>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {poolSongs.map((song) => (
-                  <SongCard
-                    key={song.id}
-                    song={song}
-                    userId={user!.id}
-                    onVote={handleVote}
-                    onRemove={handleRemove}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
 
-          {/* Setlist */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="section-title">
-                <ListMusic className="w-5 h-5 text-emerald-400" />
-                Setlist
-                <span className="badge-emerald ml-1">{setlistSongs.length}</span>
-              </h2>
-              {setlistSongs.length > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-zinc-500">
-                  <Hash className="w-3.5 h-3.5" />
-                  {setlistSongs.length} tracks
-                </div>
+              {showAddSong && (
+                <form onSubmit={handleAddSong} className="card mb-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="song-title" className="block text-sm font-medium text-zinc-400 mb-1.5">
+                        Title
+                      </label>
+                      <input
+                        id="song-title"
+                        type="text"
+                        value={songTitle}
+                        onChange={(e) => setSongTitle(e.target.value)}
+                        placeholder="Song title"
+                        className="w-full"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="song-artist" className="block text-sm font-medium text-zinc-400 mb-1.5">
+                        Artist
+                      </label>
+                      <input
+                        id="song-artist"
+                        type="text"
+                        value={songArtist}
+                        onChange={(e) => setSongArtist(e.target.value)}
+                        placeholder="Artist name"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="song-bpm" className="block text-sm font-medium text-zinc-400 mb-1.5">
+                        BPM (optional)
+                      </label>
+                      <input
+                        id="song-bpm"
+                        type="number"
+                        value={songBpm}
+                        onChange={(e) => setSongBpm(e.target.value)}
+                        placeholder="120"
+                        min="1"
+                        max="300"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="song-key" className="block text-sm font-medium text-zinc-400 mb-1.5">
+                        Key (optional)
+                      </label>
+                      <input
+                        id="song-key"
+                        type="text"
+                        value={songKey}
+                        onChange={(e) => setSongKey(e.target.value)}
+                        placeholder="Am"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button id="add-song-submit" type="submit" className="btn-primary">
+                      <Plus className="w-4 h-4" />
+                      Add to Pool
+                    </button>
+                  </div>
+                </form>
               )}
-            </div>
 
-            {setlistSongs.length === 0 ? (
-              <div className="border-2 border-dashed border-zinc-800 rounded-xl py-16 text-center">
-                <ListMusic className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                <p className="text-zinc-500 text-sm">Your setlist is empty</p>
-                <p className="text-zinc-600 text-xs mt-1">Drag songs from the pool to build your setlist</p>
+              <DroppablePool isOver={overContainerId === POOL_ID}>
+                {poolSongs.length === 0 && !activeDragId ? (
+                  <div className="text-center py-12">
+                    <Music className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                    <p className="text-zinc-500 text-sm">No songs in the pool yet</p>
+                    <p className="text-zinc-600 text-xs mt-1">Add songs and vote on them</p>
+                  </div>
+                ) : (
+                  poolSongs.map((song) => (
+                    <DraggablePoolSong
+                      key={song.id}
+                      song={song}
+                      userId={user!.id}
+                      onVote={handleVote}
+                      onRemove={handleRemove}
+                    />
+                  ))
+                )}
+              </DroppablePool>
+            </section>
+
+            {/* Setlist */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="section-title">
+                  <ListMusic className="w-5 h-5 text-emerald-400" />
+                  Setlist
+                  <span className="badge-emerald ml-1">{setlistSongs.length}</span>
+                </h2>
+                {setlistSongs.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-sm text-zinc-500">
+                    <Hash className="w-3.5 h-3.5" />
+                    {setlistSongs.length} tracks
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                {setlistSongs.map((song, index) => (
-                  <SongCard
-                    key={song.id}
-                    song={song}
-                    userId={user!.id}
-                    showDragHandle
-                    position={index + 1}
-                    onVote={handleVote}
-                    onRemove={handleRemove}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+
+              <SortableContext items={setlistIds} strategy={verticalListSortingStrategy}>
+                <DroppableSetlist
+                  isOver={overContainerId === SETLIST_ID}
+                  isEmpty={setlistSongs.length === 0}
+                >
+                  {setlistSongs.length === 0 ? (
+                    <>
+                      <ListMusic className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                      <p className="text-zinc-500 text-sm">Your setlist is empty</p>
+                      <p className="text-zinc-600 text-xs mt-1">Drag songs from the pool to build your setlist</p>
+                    </>
+                  ) : (
+                    setlistSongs.map((song, index) => (
+                      <SortableSongCard
+                        key={song.id}
+                        song={song}
+                        userId={user!.id}
+                        position={index + 1}
+                        onVote={handleVote}
+                        onRemove={handleRemove}
+                      />
+                    ))
+                  )}
+                </DroppableSetlist>
+              </SortableContext>
+            </section>
+          </div>
+
+          <DragOverlay dropAnimation={null}>
+            {activeSong ? (
+              <SongCard
+                song={activeSong}
+                userId={user!.id}
+                isOverlay
+                showDragHandle={activeSong.setlistOrder !== null}
+                onVote={() => {}}
+                onRemove={() => {}}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
     </div>
   );
