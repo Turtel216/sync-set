@@ -1,7 +1,7 @@
 # SyncSet
 
 <div align="center">
-  <p><strong>Real-time collaborative jam session planner for musicians.</strong></p>
+  <p><strong>Real-time collaborative setlist planner for musicians.</strong></p>
 </div>
 
 SyncSet is a live workspace where band members can log in, suggest songs for an upcoming gig, vote on them, and drag-and-drop tracks into a final setlist. Every action updates instantly across all connected clients in a specific session room.
@@ -91,6 +91,6 @@ SyncSet uses Prisma to manage 6 core models:
 - **Song**: A track suggested for a gig, tracking its `setlistOrder`.
 - **Vote**: A user's upvote (+1) or downvote (-1) on a specific song.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
