@@ -1,4 +1,4 @@
-# ---- Stage 1: Install dependencies ----
+# Install dependencies
 FROM node:22-alpine AS deps
 
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 
-# ---- Stage 2: Build the Vite app ----
+# Build the Vite app
 FROM node:22-alpine AS build
 
 WORKDIR /app
@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 
-# ---- Stage 3: Serve with nginx ----
+# Serve with nginx
 FROM nginx:alpine AS production
 
 COPY --from=build /app/dist /usr/share/nginx/html

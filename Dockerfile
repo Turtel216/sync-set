@@ -1,4 +1,4 @@
-# ---- Stage 1: Install dependencies ----
+# ---- Install dependencies
 FROM node:22-alpine AS deps
 
 WORKDIR /app
@@ -10,7 +10,7 @@ RUN npm ci --ignore-scripts && \
     npx prisma generate
 
 
-# ---- Stage 2: Build TypeScript ----
+# Build TypeScript
 FROM node:22-alpine AS build
 
 WORKDIR /app
@@ -23,7 +23,7 @@ COPY src ./src
 RUN npx tsc
 
 
-# ---- Stage 3: Production image ----
+# Production image
 FROM node:22-alpine AS production
 
 WORKDIR /app
