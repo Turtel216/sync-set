@@ -37,8 +37,8 @@ The easiest way to run SyncSet locally is using Docker Compose, which spins up t
 
 1. **Clone the repository:**
    ```bash
-   git clone 
-   cd 
+   git clone https://gitlab.com/papakonstantinou/sync-set
+   cd sync-set
    ```
 
 2. **Configure Environment:**

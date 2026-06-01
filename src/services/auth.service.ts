@@ -10,7 +10,7 @@ function generateToken(userId: string, username: string): string {
 }
 
 export const register = (username: string, password: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const existing = yield* Effect.tryPromise({
       try: () => prisma.user.findUnique({ where: { username } }),
       catch: (error) => new DatabaseError(String(error)),
@@ -40,7 +40,7 @@ export const register = (username: string, password: string) =>
   });
 
 export const login = (username: string, password: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const user = yield* Effect.tryPromise({
       try: () => prisma.user.findUnique({ where: { username } }),
       catch: (error) => new DatabaseError(String(error)),

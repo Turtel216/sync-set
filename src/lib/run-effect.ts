@@ -19,14 +19,21 @@ export function runEffect<A, E extends { _tag: string; message: string }>(
   effect: Effect.Effect<A, E>,
   successStatus = 200
 ): void {
-  Effect.runPromise(effect).then(
-    (result) => {
-      res.status(successStatus).json(result);
-    },
-    (error: any) => {
+  const program = Effect.match(effect, {
+    onFailure: (error) => {
       const status = ERROR_STATUS_MAP[error._tag] || 500;
       const message = status === 500 ? "Internal server error" : error.message;
       res.status(status).json({ error: message });
+    },
+    onSuccess: (result) => {
+      res.status(successStatus).json(result);
+    },
+  });
+
+  Effect.runPromise(program).catch((defect) => {
+    console.error("Critical Unhandled Defect:", defect);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
     }
-  );
+  });
 }
