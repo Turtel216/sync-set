@@ -24,13 +24,12 @@ export const SongCard = forwardRef<HTMLDivElement, SongCardProps>(function SongC
   return (
     <div
       ref={ref}
-      className={`group bg-zinc-900 border rounded-lg px-4 py-3 flex items-center gap-3 transition-all duration-200 ${
-        isDragging
+      className={`group bg-zinc-900 border rounded-lg px-4 py-3 flex items-center gap-3 transition-all duration-200 ${isDragging
           ? "opacity-40 border-brand-500/30"
           : isOverlay
             ? "border-brand-500 shadow-lg shadow-brand-500/20 scale-[1.02] bg-zinc-800"
             : "border-zinc-800 hover:border-zinc-700"
-      }`}
+        }`}
     >
       {showDragHandle && (
         <div
@@ -62,33 +61,30 @@ export const SongCard = forwardRef<HTMLDivElement, SongCardProps>(function SongC
           <button
             id={`upvote-${song.id}`}
             onClick={() => onVote(song.id, 1)}
-            className={`p-1.5 rounded-md transition-all duration-200 ${
-              userVote?.value === 1
+            className={`p-1.5 rounded-md transition-all duration-200 ${userVote?.value === 1
                 ? "bg-emerald-500/20 text-emerald-400"
                 : "text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10"
-            }`}
+              }`}
           >
             <ThumbsUp className="w-3.5 h-3.5" />
           </button>
           <span
-            className={`text-sm font-semibold min-w-[1.5rem] text-center ${
-              song.votes > 0
+            className={`text-sm font-semibold min-w-[1.5rem] text-center ${song.votes > 0
                 ? "text-emerald-400"
                 : song.votes < 0
                   ? "text-rose-400"
                   : "text-zinc-500"
-            }`}
+              }`}
           >
             {song.votes}
           </span>
           <button
             id={`downvote-${song.id}`}
             onClick={() => onVote(song.id, -1)}
-            className={`p-1.5 rounded-md transition-all duration-200 ${
-              userVote?.value === -1
+            className={`p-1.5 rounded-md transition-all duration-200 ${userVote?.value === -1
                 ? "bg-rose-500/20 text-rose-400"
                 : "text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10"
-            }`}
+              }`}
           >
             <ThumbsDown className="w-3.5 h-3.5" />
           </button>

@@ -40,9 +40,8 @@ function DroppablePool({ children, isOver }: { children: React.ReactNode; isOver
   return (
     <div
       ref={setNodeRef}
-      className={`space-y-2 min-h-[100px] rounded-xl p-2 -m-2 transition-colors duration-200 ${
-        isOver ? "bg-brand-500/5 ring-1 ring-brand-500/20" : ""
-      }`}
+      className={`space-y-2 min-h-[100px] rounded-xl p-2 -m-2 transition-colors duration-200 ${isOver ? "bg-brand-500/5 ring-1 ring-brand-500/20" : ""
+        }`}
     >
       {children}
     </div>
@@ -55,15 +54,14 @@ function DroppableSetlist({ children, isOver, isEmpty }: { children: React.React
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[100px] rounded-xl transition-all duration-200 ${
-        isEmpty && !isOver
-          ? "border-2 border-dashed border-zinc-800 py-16 text-center"
-          : isEmpty && isOver
-            ? "border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 py-16 text-center"
-            : isOver
-              ? "bg-emerald-500/5 ring-1 ring-emerald-500/20 p-2 -m-2 space-y-2"
-              : "space-y-2 p-2 -m-2"
-      }`}
+      className={`min-h-[100px] rounded-xl transition-all duration-200 ${isEmpty && !isOver
+        ? "border-2 border-dashed border-zinc-800 py-16 text-center"
+        : isEmpty && isOver
+          ? "border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 py-16 text-center"
+          : isOver
+            ? "bg-emerald-500/5 ring-1 ring-emerald-500/20 p-2 -m-2 space-y-2"
+            : "space-y-2 p-2 -m-2"
+        }`}
     >
       {children}
     </div>
@@ -345,11 +343,10 @@ export function GigPage() {
               </div>
             )}
             <div
-              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg ${
-                connected
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-              }`}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg ${connected
+                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                }`}
             >
               {connected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
               <span className="hidden sm:inline">{connected ? "Live" : "Offline"}</span>
@@ -533,8 +530,8 @@ export function GigPage() {
                 userId={user!.id}
                 isOverlay
                 showDragHandle={activeSong.setlistOrder !== null}
-                onVote={() => {}}
-                onRemove={() => {}}
+                onVote={() => { }}
+                onRemove={() => { }}
               />
             ) : null}
           </DragOverlay>

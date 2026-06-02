@@ -103,6 +103,7 @@ export function useGigSocket(gigId: string | undefined): UseGigSocketReturn {
       onConnect();
     }
 
+    // Cleanup socket
     return () => {
       socket.emit(EVENTS.LEAVE_GIG);
       socket.off("connect", onConnect);
