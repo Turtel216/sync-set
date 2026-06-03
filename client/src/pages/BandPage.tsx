@@ -112,7 +112,7 @@ export function BandPage() {
     <div className="page-container">
       <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <button id="back-to-dashboard" onClick={() => navigate("/")} className="btn-icon">
+          <button id="back-to-dashboard" type="button" onClick={() => navigate("/")} className="btn-icon">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
@@ -139,6 +139,7 @@ export function BandPage() {
             {isAdmin && (
               <button
                 id="toggle-add-member"
+                type="button"
                 onClick={() => setShowAddMember(!showAddMember)}
                 className="btn-ghost text-sm"
               >
@@ -203,6 +204,7 @@ export function BandPage() {
             </h2>
             <button
               id="toggle-create-gig"
+              type="button"
               onClick={() => setShowCreateGig(!showCreateGig)}
               className="btn-primary text-sm"
             >
@@ -277,6 +279,7 @@ export function BandPage() {
                 <button
                   key={gig.id}
                   id={`gig-card-${gig.id}`}
+                  type="button"
                   onClick={() => navigate(`/gigs/${gig.id}`)}
                   className="card-hover text-left group"
                 >

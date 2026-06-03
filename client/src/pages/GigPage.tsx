@@ -296,7 +296,7 @@ export function GigPage() {
     <div className="page-container">
       <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <button id="back-to-band" onClick={() => navigate(`/bands/${gig.bandId}`)} className="btn-icon">
+          <button id="back-to-band" type="button" onClick={() => navigate(`/bands/${gig.bandId}`)} className="btn-icon">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
@@ -380,6 +380,7 @@ export function GigPage() {
                 </h2>
                 <button
                   id="toggle-add-song"
+                  type="button"
                   onClick={() => setShowAddSong(!showAddSong)}
                   className="btn-primary text-sm"
                 >

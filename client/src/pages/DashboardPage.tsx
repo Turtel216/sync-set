@@ -60,7 +60,7 @@ export function DashboardPage() {
             <span className="text-sm text-zinc-400 hidden sm:block">
               Hey, <span className="text-zinc-200 font-medium">{user?.username}</span>
             </span>
-            <button id="logout-btn" onClick={logout} className="btn-ghost text-sm">
+            <button type="button" id="logout-btn" onClick={logout} className="btn-ghost text-sm">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
@@ -72,6 +72,7 @@ export function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-zinc-100">Your Bands</h2>
           <button
+            type="button"
             id="create-band-toggle"
             onClick={() => setShowCreate(!showCreate)}
             className="btn-primary text-sm"
@@ -127,6 +128,7 @@ export function DashboardPage() {
             {bands.map((band) => (
               <button
                 key={band.id}
+                type="button"
                 id={`band-card-${band.id}`}
                 onClick={() => navigate(`/bands/${band.id}`)}
                 className="card-hover text-left group"

@@ -25,10 +25,10 @@ export const SongCard = forwardRef<HTMLDivElement, SongCardProps>(function SongC
     <div
       ref={ref}
       className={`group bg-zinc-900 border rounded-lg px-4 py-3 flex items-center gap-3 transition-all duration-200 ${isDragging
-          ? "opacity-40 border-brand-500/30"
-          : isOverlay
-            ? "border-brand-500 shadow-lg shadow-brand-500/20 scale-[1.02] bg-zinc-800"
-            : "border-zinc-800 hover:border-zinc-700"
+        ? "opacity-40 border-brand-500/30"
+        : isOverlay
+          ? "border-brand-500 shadow-lg shadow-brand-500/20 scale-[1.02] bg-zinc-800"
+          : "border-zinc-800 hover:border-zinc-700"
         }`}
     >
       {showDragHandle && (
@@ -60,30 +60,32 @@ export const SongCard = forwardRef<HTMLDivElement, SongCardProps>(function SongC
         <div className="flex items-center gap-1 shrink-0">
           <button
             id={`upvote-${song.id}`}
+            type="button"
             onClick={() => onVote(song.id, 1)}
             className={`p-1.5 rounded-md transition-all duration-200 ${userVote?.value === 1
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10"
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10"
               }`}
           >
             <ThumbsUp className="w-3.5 h-3.5" />
           </button>
           <span
             className={`text-sm font-semibold min-w-[1.5rem] text-center ${song.votes > 0
-                ? "text-emerald-400"
-                : song.votes < 0
-                  ? "text-rose-400"
-                  : "text-zinc-500"
+              ? "text-emerald-400"
+              : song.votes < 0
+                ? "text-rose-400"
+                : "text-zinc-500"
               }`}
           >
             {song.votes}
           </span>
           <button
             id={`downvote-${song.id}`}
+            type="button"
             onClick={() => onVote(song.id, -1)}
             className={`p-1.5 rounded-md transition-all duration-200 ${userVote?.value === -1
-                ? "bg-rose-500/20 text-rose-400"
-                : "text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10"
+              ? "bg-rose-500/20 text-rose-400"
+              : "text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10"
               }`}
           >
             <ThumbsDown className="w-3.5 h-3.5" />
@@ -94,6 +96,7 @@ export const SongCard = forwardRef<HTMLDivElement, SongCardProps>(function SongC
       {canRemove && (
         <button
           id={`remove-song-${song.id}`}
+          type="button"
           onClick={() => onRemove(song.id)}
           className="p-1.5 rounded-md text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
         >
