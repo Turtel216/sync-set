@@ -20,8 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    const stored = localStorage.getItem("token:v1");
+    const storedUser = localStorage.getItem("user:v1");
     if (stored && storedUser) {
       setToken(stored);
       setUser(JSON.parse(storedUser));
@@ -30,8 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleAuth = useCallback((data: AuthResponse) => {
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("token:v1", data.token);
+    localStorage.setItem("user:v1", JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
   }, []);
